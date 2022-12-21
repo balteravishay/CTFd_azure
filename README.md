@@ -2,10 +2,6 @@
 
 Deploy [CTFd](https://github.com/CTFd/CTFd) to Azure using PaaS services, using [Azure Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview?tabs=bicep)
 
-## Deploy to Azure
-
-TODO: add deploy to azure button
-
 ## Run the deployment locally
 
 ```bash
