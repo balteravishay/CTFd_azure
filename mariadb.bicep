@@ -80,58 +80,16 @@ resource mariaDbServer 'Microsoft.DBforMariaDB/servers@2018-06-01' = {
   }
 }
 
-resource mariadb_privateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = if (vnet) {
-  name: 'mariadb_private_endpoint'
-  location: location
-  properties: {
-    subnet: {
-      id: resourceId('Microsoft.Network/virtualNetworks/subnets', virtualNetworkName, resourcesSubnetName)
-    }
-    privateLinkServiceConnections: [
-      {
-        name: 'mariadb_privateEndpoint'
-        properties: {
-          privateLinkServiceId: mariaDbServer.id
-          groupIds: [
-            'mariadbServer'
-          ]
-        }
-      }
-    ]
+module privateEndpointModule 'privateendpoint.bicep' = if (vnet) {
+  name: 'mariaDbPrivateEndpointDeploy'
+  params: {
+    virtualNetworkName: virtualNetworkName
+    subnetName: resourcesSubnetName
+    resuorceId: mariaDbServer.id
+    resuorceGroupId: 'mariadbServer'
+    privateDnsZoneName: 'privatelink.mariadb.database.azure.com'
+    privateEndpointName: 'mariadb_private_endpoint'
+    location: location
   }
 }
 
-resource mariadb_privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = if (vnet) {
-  name: 'privatelink.mariadb.database.azure.com'
-  location: 'global'
-  properties: {}
-}
-
-resource mariadb_privateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if (vnet) {
-  parent: mariadb_privateDnsZone
-  name: 'privatelink.mariadb.database.azure.com-link'
-  location: 'global'
-  properties: {
-    registrationEnabled: false
-    virtualNetwork: {
-      id: resourceId('Microsoft.Network/virtualNetworks', virtualNetworkName)
-    }
-  }
-}
-
-resource mariadb_pvtEndpointDnsGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = if (vnet) {
-  name: 'mariadb_private_endpoint/default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'config1'
-        properties: {
-          privateDnsZoneId: mariadb_privateDnsZone.id
-        }
-      }
-    ]
-  }
-  dependsOn: [
-    mariadb_privateEndpoint
-  ]
-}

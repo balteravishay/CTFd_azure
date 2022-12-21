@@ -27,59 +27,15 @@ resource redis_cache 'Microsoft.Cache/redis@2022-06-01' = {
   }
 }
 
-resource redis_privateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = if (vnet) {
-  name: 'redis_private_endpoint'
-  location: location
-  properties: {
-    subnet: {
-      id: resourceId('Microsoft.Network/virtualNetworks/subnets', virtualNetworkName, resourcesSubnetName)
-    }
-    privateLinkServiceConnections: [
-      {
-        name: 'redis_private_endpoint'
-        properties: {
-          privateLinkServiceId: redis_cache.id
-          groupIds: [
-            'redisCache'
-          ]
-        }
-      }
-    ]
+module privateEndpointModule 'privateendpoint.bicep' = if (vnet) {
+  name: 'redisPrivateEndpointDeploy'
+  params: {
+    virtualNetworkName: virtualNetworkName
+    subnetName: resourcesSubnetName
+    resuorceId: redis_cache.id
+    resuorceGroupId: 'redisCache'
+    privateDnsZoneName: 'privatelink.redis.cache.windows.net'
+    privateEndpointName: 'redis_private_endpoint'
+    location: location
   }
 }
-
-resource redis_privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = if (vnet) {
-  name: 'privatelink.redis.cache.windows.net'
-  location: 'global'
-  properties: {}
-}
-
-resource redis_privateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if (vnet) {
-  parent: redis_privateDnsZone
-  name: 'privatelink.redis.cache.windows.net-link'
-  location: 'global'
-  properties: {
-    registrationEnabled: false
-    virtualNetwork: {
-      id: resourceId('Microsoft.Network/virtualNetworks', virtualNetworkName)
-    }
-  }
-}
-
-resource redis_pvtEndpointDnsGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = if (vnet) {
-  name: 'redis_private_endpoint/default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'config1'
-        properties: {
-          privateDnsZoneId: redis_privateDnsZone.id
-        }
-      }
-    ]
-  }
-  dependsOn: [
-    redis_privateEndpoint
-  ]
-}
-
