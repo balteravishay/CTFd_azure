@@ -1,8 +1,10 @@
 # CTFd PaaS on Azure
 
-Deploy [CTFd](https://github.com/CTFd/CTFd) to Azure using PaaS services, using [Azure Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview?tabs=bicep)
+Deploy [CTFd](https://github.com/CTFd/CTFd) to Azure PaaS services, using [Azure Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview?tabs=bicep)
 
-## Run the deployment locally
+## Deploy to Azure
+
+To deploy the bicep template to Azure, use the following script:
 
 ```bash
 export DB_PASSWORD='YOUR PASSWORD'
