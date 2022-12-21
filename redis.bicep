@@ -1,5 +1,5 @@
 @description('Deploy in VNet')
-param vnet bool = false
+param vnet bool
 
 @description('Server Name for Azure cache for Redis')
 param redisServerName string
