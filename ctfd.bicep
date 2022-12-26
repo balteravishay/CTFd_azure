@@ -39,7 +39,7 @@ var ctfDatabaseSecretName = 'ctfd-db-url'
 // Scope
 targetScope = 'resourceGroup'
 
-module vnetModule './vnet.bicep' = if (vnet) {
+module vnetModule 'modules/vnet.bicep' = if (vnet) {
   name: 'vnetDeploy'
   params: {
     location: resourcesLocation
@@ -49,7 +49,7 @@ module vnetModule './vnet.bicep' = if (vnet) {
   }
 }
 
-module ctfWebAppModule './webapp.bicep' = {
+module ctfWebAppModule 'modules/webapp.bicep' = {
   name: 'ctfDeploy'
   dependsOn: [ vnetModule ]
   params: {
@@ -65,7 +65,7 @@ module ctfWebAppModule './webapp.bicep' = {
   }
 }
 
-module akvModule './keyvault.bicep' = {
+module akvModule 'modules/keyvault.bicep' = {
   name: 'keyVaultDeploy'
   dependsOn: [ ctfWebAppModule ]
   params: {
@@ -78,7 +78,7 @@ module akvModule './keyvault.bicep' = {
   }
 }
 
-module redisModule './redis.bicep' = {
+module redisModule 'modules/redis.bicep' = {
   name: 'redisDeploy'
   dependsOn: [ 
     vnetModule
@@ -95,7 +95,7 @@ module redisModule './redis.bicep' = {
   }
 }
 
-module mariaDbModule './mariadb.bicep' = {
+module mariaDbModule 'modules/mariadb.bicep' = {
   name: 'mariaDbDeploy'
   dependsOn: [ 
     vnetModule
