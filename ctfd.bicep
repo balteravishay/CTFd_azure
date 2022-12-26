@@ -1,5 +1,5 @@
 @description('Deploy with VNet')
-param vnet bool = false
+param vnet bool = true
 
 @description('Server Name for Azure cache for Redis')
 param redisServerName string = 'ctfd-redis-server'
@@ -16,6 +16,9 @@ param administratorLogin string = 'ctfd'
 @secure()
 param administratorLoginPassword string
 
+@description('Name of Azure Key Vault')
+param keyVaultName string = 'ctfd-azure-keyvault'
+
 @description('Server Name for Azure app service')
 param appServicePlanName string = 'ctfd-app-server'
 
@@ -30,6 +33,8 @@ param resourcesLocation string = resourceGroup().location
 
 var resourcesSubnetName = 'resources_subnet'
 var integrationSubnetName = 'integration_subnet'
+var ctfCacheSecretName = 'ctfd-cache-url'
+var ctfDatabaseSecretName = 'ctfd-db-url'
 
 // Scope
 targetScope = 'resourceGroup'
@@ -44,48 +49,67 @@ module vnetModule './vnet.bicep' = if (vnet) {
   }
 }
 
+module ctfWebAppModule './webapp.bicep' = {
+  name: 'ctfDeploy'
+  dependsOn: [ vnetModule ]
+  params: {
+    virtualNetworkName: virtualNetworkName
+    location: resourcesLocation
+    appServicePlanName: appServicePlanName
+    keyVaultName: keyVaultName
+    ctfCacheUrlSecretName: ctfCacheSecretName
+    ctfDatabaseUrlSecretName: ctfDatabaseSecretName
+    integrationSubnetName: integrationSubnetName
+    webAppName: webAppName
+    vnet: vnet
+  }
+}
+
+module akvModule './keyvault.bicep' = {
+  name: 'keyVaultDeploy'
+  dependsOn: [ ctfWebAppModule ]
+  params: {
+    keyVaultName: keyVaultName
+    location: resourcesLocation
+    readerPrincipalId: ctfWebAppModule.outputs.servicePrincipalId
+    resourcesSubnetName: resourcesSubnetName
+    virtualNetworkName: virtualNetworkName
+    vnet: vnet
+  }
+}
+
 module redisModule './redis.bicep' = {
   name: 'redisDeploy'
-  dependsOn: [vnetModule]
+  dependsOn: [ 
+    vnetModule
+    akvModule
+  ]
   params: {
     redisServerName: redisServerName
     virtualNetworkName: virtualNetworkName
     resourcesSubnetName: resourcesSubnetName
     location: resourcesLocation
     vnet: vnet
+    ctfCacheSecretName: ctfCacheSecretName
+    keyVaultName: keyVaultName
   }
 }
 
 module mariaDbModule './mariadb.bicep' = {
   name: 'mariaDbDeploy'
-  dependsOn: [vnetModule]
-  params: {
-    mariaServerName: mariaServerName
-    administratorLogin: administratorLogin
-    administratorLoginPassword: administratorLoginPassword
-    virtualNetworkName: virtualNetworkName
-    resourcesSubnetName: resourcesSubnetName
-    location: resourcesLocation
-    vnet: vnet
-  }
-}
-
-module ctfWebAppModule './webapp.bicep' = {
-  name: 'ctfDeploy'
-  dependsOn: [
-    redisModule
-    mariaDbModule
+  dependsOn: [ 
+    vnetModule
+    akvModule
   ]
   params: {
     mariaServerName: mariaServerName
     administratorLogin: administratorLogin
     administratorLoginPassword: administratorLoginPassword
     virtualNetworkName: virtualNetworkName
+    resourcesSubnetName: resourcesSubnetName
     location: resourcesLocation
-    redisServerName: redisServerName
-    appServicePlanName: appServicePlanName
-    integrationSubnetName: integrationSubnetName
-    webAppName: webAppName
     vnet: vnet
+    ctfDbSecretName: ctfDatabaseSecretName
+    keyVaultName: keyVaultName
   }
 }

@@ -19,6 +19,12 @@ param virtualNetworkName string
 @description('Name of the resources subnet')
 param resourcesSubnetName string
 
+@description('Name of the key vault')
+param keyVaultName string
+
+@description('Name of the connection string secret')
+param ctfDbSecretName string
+
 @description('Location for all resources.')
 param location string
 
@@ -92,4 +98,14 @@ module privateEndpointModule 'privateendpoint.bicep' = if (vnet) {
     location: location
   }
 }
+
+module cacheSecret 'key-vault-secret.bicep' = {
+  name: 'mariaDbKeyDeploy'
+  params: {
+    keyVaultName: keyVaultName
+    secretName: ctfDbSecretName
+    secretValue: 'mysql+pymysql://${administratorLogin}%40${mariaServerName}.mariadb.database.azure.com:${administratorLoginPassword}@${mariaServerName}.mariadb.database.azure.com/ctfd'
+  }
+}
+
 

@@ -10,6 +10,12 @@ param virtualNetworkName string
 @description('Name of the resources subnet')
 param resourcesSubnetName string
 
+@description('Name of the key vault')
+param keyVaultName string
+
+@description('Name of the connection string secret')
+param ctfCacheSecretName string
+
 @description('Location for all resources.')
 param location string
 
@@ -37,5 +43,14 @@ module privateEndpointModule 'privateendpoint.bicep' = if (vnet) {
     privateDnsZoneName: 'privatelink.redis.cache.windows.net'
     privateEndpointName: 'redis_private_endpoint'
     location: location
+  }
+}
+
+module cacheSecret 'key-vault-secret.bicep' = {
+  name: 'redisKeyDeploy'
+  params: {
+    keyVaultName: keyVaultName
+    secretName: ctfCacheSecretName
+    secretValue: 'redis://:${redis_cache.listKeys().primaryKey}@${redisServerName}.redis.cache.windows.net'
   }
 }

@@ -16,24 +16,15 @@ param virtualNetworkName string
 @description('Name of the integration subnet')
 param integrationSubnetName string
 
-@description('Server Name for Azure cache for Redis')
-param redisServerName string
+@description('Name of azure key vault')
+param keyVaultName string
 
-@description('Server Name for Azure database for MariaDB')
-param mariaServerName string
+@description('Secret Name of the ctf database url in key vault')
+param ctfDatabaseUrlSecretName string
 
-@description('Database administrator login name')
-@minLength(1)
-param administratorLogin string
+@description('Secret Name of the ctf cache url in key vault')
+param ctfCacheUrlSecretName string
 
-@description('Database administrator password')
-@minLength(8)
-@secure()
-param administratorLoginPassword string
-
-resource redis_cache 'Microsoft.Cache/redis@2022-06-01' existing = {
-  name: redisServerName
-}
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2020-12-01' = {
   name: appServicePlanName
@@ -52,6 +43,9 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
   name: webAppName
   location: location
   tags: {}
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     virtualNetworkSubnetId: (vnet ? resourceId('Microsoft.Network/virtualNetworks/subnets', virtualNetworkName, integrationSubnetName) : null)
     vnetRouteAllEnabled: (vnet ? true : false)
@@ -60,11 +54,11 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
       appSettings: [
         {
           name: 'DATABASE_URL'
-          value: 'mysql+pymysql://${administratorLogin}%40${mariaServerName}.mariadb.database.azure.com:${administratorLoginPassword}@${mariaServerName}.mariadb.database.azure.com/ctfd'
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/${ctfDatabaseUrlSecretName}/)'
         }
         {
           name: 'REDIS_URL'
-          value: 'redis://:${redis_cache.listKeys().primaryKey}@${redisServerName}.redis.cache.windows.net'
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/${ctfCacheUrlSecretName}/)'
         }
         {
           name: 'REVERSE_PROXY'
@@ -84,3 +78,5 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
     serverFarmId: appServicePlan.id
   }
 }
+
+output servicePrincipalId string = webApp.identity.principalId
