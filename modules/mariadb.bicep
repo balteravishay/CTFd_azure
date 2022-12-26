@@ -99,7 +99,7 @@ module privateEndpointModule 'privateendpoint.bicep' = if (vnet) {
   }
 }
 
-module cacheSecret 'key-vault-secret.bicep' = {
+module cacheSecret 'keyvaultsecret.bicep' = {
   name: 'mariaDbKeyDeploy'
   params: {
     keyVaultName: keyVaultName
