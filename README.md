@@ -25,6 +25,9 @@ az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file
 - **administratorLoginPassword** - MariaDB admin password, the only required parameter (string).
 - **keyVaultName** – Name of the key vault service (string).
 - **appServicePlanName** - Name of app service plan (string).
+- **appServicePlanSkuTier** - App Service Plan SKU tier (string).
+- **appServicePlanSkuName** - App Service Plan SKU name (string).
 - **webAppName** - Name of app service webapp (string).
+- **logAnalyticsName** - Name for Log Analytics Workspace (string).
 - **virtualNetworkName** - Name of virtual network (string).
 - **resourcesLocation** - Location of resources, defaults to the resource group location (string).
