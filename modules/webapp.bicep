@@ -25,6 +25,14 @@ param ctfDatabaseUrlSecretName string
 @description('Secret Name of the ctf cache url in key vault')
 param ctfCacheUrlSecretName string
 
+@description('Log Anaytics Workspace Id')
+param logAnalyticsWorkspaceId string
+
+@description('App Service Plan SKU tier')
+param appServicePlanSkuTier string
+
+@description('App Service Plan SKU name')
+param appServicePlanSkuName string
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2020-12-01' = {
   name: appServicePlanName
@@ -34,8 +42,8 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2020-12-01' = {
     reserved: true
   }	
   sku:  {
-  	name: 'B1'
-    tier: 'Basic'
+  	name: appServicePlanSkuName
+    tier: appServicePlanSkuTier
   }
 }
 
@@ -50,7 +58,6 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
     virtualNetworkSubnetId: (vnet ? resourceId('Microsoft.Network/virtualNetworks/subnets', virtualNetworkName, integrationSubnetName) : null)
     vnetRouteAllEnabled: (vnet ? true : false)
     siteConfig: {
-      
       appSettings: [
         {
           name: 'DATABASE_URL'
@@ -73,9 +80,98 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
           value: 'https://index.docker.io'
         }
       ]
-      linuxFxVersion: 'DOCKER|ctfd/ctfd:latest'
+      linuxFxVersion: 'DOCKER|ctfd/ctfd:latest'    
     }
     serverFarmId: appServicePlan.id
+  }
+}
+
+resource appServiceAppSettings 'Microsoft.Web/sites/config@2020-06-01' = {
+  parent: webApp
+  name: 'logs'
+  properties: {
+    applicationLogs: {
+      fileSystem: {
+        level: 'Warning'
+      }
+    }
+    httpLogs: {
+      fileSystem: {
+        retentionInMb: 40
+        retentionInDays: 5
+        enabled: true
+      }
+    }
+    failedRequestsTracing: {
+      enabled: true
+    }
+    detailedErrorMessages: {
+      enabled: true
+    }
+  }
+}
+
+resource diagnosticsSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: '${webAppName}-diagnostics'
+  scope: webApp
+  properties: {
+    logs: [
+      {
+          category: 'AppServiceHTTPLogs'
+          categoryGroup: null
+          enabled: true
+          retentionPolicy: {
+              days: 0
+              enabled: false
+          }
+      }
+      {
+          category: 'AppServiceConsoleLogs'
+          categoryGroup: null
+          enabled: true
+          retentionPolicy: {
+              days: 0
+              enabled: false
+          }
+      }
+      {
+          category: 'AppServiceAppLogs'
+          categoryGroup: null
+          enabled: true
+          retentionPolicy: {
+              days: 0
+              enabled: false
+          }
+      }
+      {
+          category: 'AppServiceAuditLogs'
+          categoryGroup: null
+          enabled: false
+          retentionPolicy: {
+              days: 0
+              enabled: false
+          }
+      }
+      {
+          category: 'AppServiceIPSecAuditLogs'
+          categoryGroup: null
+          enabled: false
+          retentionPolicy: {
+              days: 0
+              enabled: false
+          }
+      }
+      {
+          category: 'AppServicePlatformLogs'
+          categoryGroup: null
+          enabled: true
+          retentionPolicy: {
+              days: 0
+              enabled: false
+          }
+      }
+  ]
+  workspaceId: logAnalyticsWorkspaceId
   }
 }
 

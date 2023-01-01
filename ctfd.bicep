@@ -1,11 +1,13 @@
+param nameUniquenss string = uniqueString(resourceGroup().id)
+
 @description('Deploy with VNet')
 param vnet bool = true
 
 @description('Server Name for Azure cache for Redis')
-param redisServerName string = 'ctfd-redis-server'
+param redisServerName string = 'ctfd-redis-${nameUniquenss}'
 
 @description('Server Name for Azure database for MariaDB')
-param mariaServerName string = 'ctfd-maria-db-server'
+param mariaServerName string = 'ctfd-mariadb-${nameUniquenss}'
 
 @description('Database administrator login name')
 @minLength(1)
@@ -17,13 +19,22 @@ param administratorLogin string = 'ctfd'
 param administratorLoginPassword string
 
 @description('Name of Azure Key Vault')
-param keyVaultName string = 'ctfd-azure-keyvault'
+param keyVaultName string = 'ctfd-kv-${nameUniquenss}'
 
 @description('Server Name for Azure app service')
-param appServicePlanName string = 'ctfd-app-server'
+param appServicePlanName string = 'ctfd-server-${nameUniquenss}'
+
+@description('App Service Plan SKU tier')
+param appServicePlanSkuTier string = 'Basic'
+
+@description('App Service Plan SKU name')
+param appServicePlanSkuName string = 'B1'
 
 @description('Name for Azure Web app')
-param webAppName string = 'ctfd-app'
+param webAppName string = 'ctfd-app-${nameUniquenss}'
+
+@description('Name for Log Analytics Workspace')
+param logAnalyticsName string = 'ctfd-log-analytics-${nameUniquenss}'
 
 @description('Name of the VNet')
 param virtualNetworkName string = 'ctf-vnet'
@@ -49,6 +60,15 @@ module vnetModule 'modules/vnet.bicep' = if (vnet) {
   }
 }
 
+module logAnalyticsModule 'modules/loganalytics.bicep' = {
+  name: 'logAnalyticsDeploy'
+  params: {
+    appName: webAppName
+    logAnalyticsName: logAnalyticsName
+    location: resourcesLocation
+  }
+}
+
 module ctfWebAppModule 'modules/webapp.bicep' = {
   name: 'ctfDeploy'
   dependsOn: [ vnetModule ]
@@ -56,11 +76,14 @@ module ctfWebAppModule 'modules/webapp.bicep' = {
     virtualNetworkName: virtualNetworkName
     location: resourcesLocation
     appServicePlanName: appServicePlanName
+    appServicePlanSkuName: appServicePlanSkuName
+    appServicePlanSkuTier: appServicePlanSkuTier
     keyVaultName: keyVaultName
     ctfCacheUrlSecretName: ctfCacheSecretName
     ctfDatabaseUrlSecretName: ctfDatabaseSecretName
     integrationSubnetName: integrationSubnetName
     webAppName: webAppName
+    logAnalyticsWorkspaceId: logAnalyticsModule.outputs.logAnalyticsWorkspaceId
     vnet: vnet
   }
 }
